@@ -12,14 +12,13 @@
 ; See the License for the specific language governing permissions and
 ; limitations under the License.
 
-(import '[org.openqa.selenium.server SeleniumServer]
-        '[com.thoughtworks.selenium DefaultSelenium])
+(import '[com.thoughtworks.selenium DefaultSelenium])
 
 (defn- run-with-client
   "Run a test function with new client"
-  [test-fn]
-  (let [client (new DefaultSelenium "localhost" 
-                    4444 "*firefox" "http://localhost/")]
+  [test-fn opts]
+  (let [client (new DefaultSelenium (:host opts) (:port opts) (:command opts) 
+                    (:url opts))]
     (.start client)
     (try
       (test-fn client)
@@ -29,9 +28,9 @@
 
 (defn- run-single-test
   "Run a single test, append test result to results"
-  [test results]
+  [test results opts]
   (let [test-fn (test :test)
-        value (run-with-client test-fn)
+        value (run-with-client test-fn opts)
         res {:test (test :name) :value value}]
     (dosync (alter results (fn [old] (conj old res))))))
 
@@ -39,7 +38,16 @@
   [num-agents]
   (take num-agents (map agent (repeat nil)))) 
 
-(def *num-agents* 4) ; Number of agents to use
+(defn- parse-options
+  "Get options as hash map, provide defaults"
+  [args]
+  (let [opts (apply hash-map args)] ; Convert [:port 4444] to {:port 4444}
+    (-> opts
+      (assoc :port (:port opts 4444))
+      (assoc :host (:host opts "localhost"))
+      (assoc :command (:command opts "*firefox"))
+      (assoc :url (:url opts "http://localhost/"))
+      (assoc :num-agents (:num-agents opts 4)))))
 
 (defn run-tests
   "Run tests in parallel, return list of test results.
@@ -51,15 +59,13 @@
     :test (fn [client] ...)
   }
   "
-  [tests reporter]
-  (let [agents (gen-agents *num-agents*)
-        results (ref [])
-        server (new SeleniumServer)]
-    (.start server)
+  [tests reporter & args]
+  (let [opts (parse-options args)
+        agents (gen-agents (:num-agents opts))
+        results (ref [])]
     (doseq [[test agent] (map vector tests (cycle agents))]
-      (send agent (fn [_] (run-single-test test results))))
+      (send agent (fn [_] (run-single-test test results opts))))
     (doseq [agent agents] (await agent)) ; Wait for tests to finish
-    (.stop server)
     (shutdown-agents)
     (reporter @results)
     @results))

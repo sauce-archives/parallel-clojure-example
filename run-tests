@@ -14,5 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-java -cp selenium-java-client-driver.jar:selenium-server.jar:clojure.jar \
-    clojure.main test-sauce.clj
+java -jar selenium-server.jar&
+server_pid=$!
+java -cp selenium-java-client-driver.jar:clojure.jar clojure.main test-sauce.clj
+ret=$?
+kill $server_pid
+exit $ret
