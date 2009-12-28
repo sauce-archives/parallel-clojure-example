@@ -1,26 +1,52 @@
 Running Parallel Tests With Clojure
 ===================================
+Clojure is a dialect of Lisp that runs on the JVM. It has very elegant syntax
+and a novel approach to concurrency.
 
+In this installment, we'll build a Clojure framework for running Selenium tests
+in parallel. We'll use Clojure's Java interop to interact with Selenium, and
+agents to distribute the work. Once you have the tests executing in parallel,
+you can run them against your internal selenium farm or use our Sauce OnDemand
+cloud hosted service to get running with no further configuration.
 
-Clojure (http://clojure.org/) is a dialect of LISP the runs on the JVM.
-It has very elegant syntax and novel approach to concurrency.
+First, the framework, in about 50 lines of code:
+    [selenium.clj]
 
-In this installed, we'll build a framework for running tests in parallel.
-We will utilize Clojure's Java interop and concurrency features to do this in
-less than 50 lines of code.
+Now let's define some tests and run them:
+    [test-sauce.clj]
+    
+To run the system locally, you'll need the Selenium server and client jars and
+the Clojure jar (we're using 1.1.0). You can use Sauce RC to get a Selenium
+server up and running using a GUI-based installer. Then, just issue the
+following command:
 
-Our framework is listed in [selenium.clj].
+    java -jar selenium-server.jar&
+    java -cp selenium-java-client-driver.jar:clojure.jar \
+        clojure.main test-sauce.clj
+(See the run-tests script, you can control the number of concurrent tests by
+providing :num-agents N to run-tests)
 
-View a way to use the framework in [test-one.clj].
+To run it against our cloud hosted service without having to configure any
+servers, simply follow the instructions at Sauce OnDemand documentation and
+supply the right options to run-tests. It will probably look something like:
 
-To run the system, you'll need the Selenium server and client jars and the
-Clojure jar (we're using 1.1.0). The issue the following command:
+    (run-tests tests reporter
+               :host "saucelabs.com"
+               :command "{
+                  \"username\" : \"SAUCE-USER-NAME\",
+                  \"access-key\" : \"SAUCE-API-KEY\",
+                  \"os\" : \"Windows 2003\",
+                  \"browser\" : \"firefox\",
+                  \"browser-version\" : \"\"}"
+               :url "http://saucelabs.com")
 
-    java -cp selenium-java-client-driver.jar:selenium-server.jar:clojure.jar \
+You won't need to run any servers locally, just execute the clojure test:
+
+    java -cp selenium-java-client-driver.jar:clojure.jar \
         clojure.main test-sauce.clj
 
-You will see three tests running in the same time (the maximal number of
-concurrent tests is define in selenium.clj as *num-agents*).
+Future enhancements to this framework might include better reporting, and
+integration with the clojure.test testing framework.
 
-Future enhancements to this framework can be better reporting, integration with
-Clojure's test/is testing framework and more.
+All of the code from this installment, including the needed jar files can be
+found at http://github.com/saucelabs/parallel-clojure-example.
