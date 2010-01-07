@@ -38,16 +38,18 @@
   [num-agents]
   (take num-agents (map agent (repeat nil)))) 
 
+(def *default-options* {
+  :port 4444 
+  :host "localhost" 
+  :command "*firefox" 
+  :url "http://localhost/" 
+  :num-agents 4 })
+
 (defn- parse-options
   "Get options as hash map, provide defaults"
   [args]
-  (let [opts (apply hash-map args)] ; Convert [:port 4444] to {:port 4444}
-    (-> opts
-      (assoc :port (:port opts 4444))
-      (assoc :host (:host opts "localhost"))
-      (assoc :command (:command opts "*firefox"))
-      (assoc :url (:url opts "http://localhost/"))
-      (assoc :num-agents (:num-agents opts 4)))))
+  (let [options (apply hash-map args)] ; Convert [:port 4444] to {:port 4444}
+    (merge *default-options* options)))
 
 (defn run-tests
   "Run tests in parallel, return list of test results.
