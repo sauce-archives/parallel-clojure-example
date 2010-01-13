@@ -28,7 +28,7 @@
 
 (def test-yahoo
   {
-   :name "sauce"
+   :name "yahoo"
    :test (fn [client]
            (doto client
              (.open "http://yahoo.com")
